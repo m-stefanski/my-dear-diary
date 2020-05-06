@@ -20,11 +20,14 @@ As of now, transfer speeds are consistently around 20-25 MB/s with the bottlenec
 |-|-|-|
 | Device | WD MyCloud EX2 Ultra | WD MyCloud EX2 Ultra |
 | Firmware | 2.31.204 | 2.31.204 |
-| Drives | 2 x 3 TB | 2 x 4 TB |
+| Drives | 2 x 3 TB WDC WD30EFRX-68N32N0, FwRev=82.00A82 | 2 x 4 TB WDC WD40EFRX-68N32N0, FwRev=82.00A82 |
 | Raid | Raid-1 | Raid-0 |
 | Encrypted | No | Yes |
 | IP address | 192.168.1.54 | 192.168.1.53 |
 
+Connected using Cat 5E cables via TP-Link TL-SG108 Gigabit switch.
+
+## Testing
 
 First, I enabled ssh access in both NASes via web-ui:
 
@@ -184,4 +187,14 @@ Target write speed:
 1073741824 bytes (1.0GB) copied, 41.367580 seconds, 24.8MB/s
 ```
 
-Ok, so it would seem drive writing speed would be at fault. But why?
+Ok, so it would seem drive writing speed would be at fault. But why? SMB transfers to the drive are faster, 50-70 MB/s, close to advertised. And it would seem that I am not the only one with such problem (SCP slow, SMB fast):
+
+* https://forums.freebsd.org/threads/slow-nfs-smb-afp-but-fast-scp-read-performance.68077/#post-410296
+
+However, the benchmarks around web seem to find scp an rsync much faster than SMB:
+
+* https://squarism.com/2010/02/12/scp-vs-rsync-vs-smb-vs-ftp/
+
+Having depleted my theories I decided to ask WD community:
+
+https://community.wd.com/t/wd-mycloud-ex2-ultra-2x4tb-slow-write-speeds-over-ssh/250988
