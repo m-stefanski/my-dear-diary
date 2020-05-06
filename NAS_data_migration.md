@@ -187,7 +187,25 @@ Target write speed:
 1073741824 bytes (1.0GB) copied, 41.367580 seconds, 24.8MB/s
 ```
 
-Ok, so it would seem drive writing speed would be at fault. But why? SMB transfers to the drive are faster, 50-70 MB/s, close to advertised. And it would seem that I am not the only one with such problem (SCP slow, SMB fast):
+Ok, so it would seem drive writing speed would be at fault. But why? Maybe indexing is at fault. There is a known issue with indexing daemons [1] to break on certain files causing infinite indexing and bringing NAS performance to its knees.
+
+Let's stop them for the time being. 
+
+```
+/etc/init.d/wdmcserverd stop
+/etc/init.d/wdphotodbmergerd stop
+```
+
+To do this permamently, following command might be used:
+
+```
+update-rc.d wdphotodbmergerd disable
+update-rc.d wdmcserverd disable
+```
+
+But to no avail. Problem remains.
+
+So there we are. SMB transfers to the drive are faster, 50-70 MB/s, close to advertised. And it would seem that I am not the only one with such problem (SCP slow, SMB fast):
 
 * https://forums.freebsd.org/threads/slow-nfs-smb-afp-but-fast-scp-read-performance.68077/#post-410296
 
