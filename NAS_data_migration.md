@@ -2,6 +2,20 @@
 
 I was trying to migrate my data from one WD MyCloud EX 2 Ultra to another. This is my story of frustration, unanswered questions and a journey through bash + ssh.
 
+## TL;DR
+
+### Results
+
+As of now, transfer speeds are consistently around 20-25 MB/s with the bottleneck being target drive write speed. Looking for possible causes.
+
+### Takeaways
+
+* To check for network performance, start with `iperf` for throughput, then `ethtool` for hardware layer and then proceed with tuning if necessary
+* To check drive performance: `hdparm` and `dd` for read and write speeds, before checking transfer tools
+* In this case, there is no performance difference between `scp` and `rsync`, athough if I wanted to resume broken copy process, rsync provides option to skip existing files (as a workaround in scp we can force this by removing write persmissions to already existing files)
+
+## Initial conditions
+
 | Parameter | Source | Target |
 |-|-|-|
 | Device | WD MyCloud EX2 Ultra | WD MyCloud EX2 Ultra |
