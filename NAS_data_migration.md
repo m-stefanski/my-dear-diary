@@ -9,11 +9,11 @@ I was trying to migrate my data from one WD MyCloud EX 2 Ultra to another. I fou
 Starting with 20-25 MB/s using `scp` and `rsync`, finished with 55 MB/s using `rsync` running as daemon on source. See [Solution](#Solution) for details.
 
 ### Takeaways
-
+* WD MyCloud EX2 Ultra is severely underpowered if you want to use any form of encrypted transfer, with only one core utilized
+* Using `rsync` on both helps to distribute CPU load - so if you are CPU-bound, consider using `rsync://` instead of `rsync+ssh` or `scp`
 * To check for network performance, start with `iperf` for throughput, then `ethtool` for hardware layer and then proceed with tuning if necessary
 * To check drive performance: `hdparm` and `dd` for read and write speeds, before checking transfer tools
-* If you use `dd` to test write speeds, **try smaller block sizes**, difference between `1G` and `1M` is huge
-* In this case, there is no performance difference between `scp` and `rsync`, athough if I wanted to resume broken copy process, rsync provides option to skip existing files (as a workaround in scp we can force this by removing write persmissions to already existing files)
+* If you use `dd` to test write speeds, **use reasonable block size**, difference between `1G` and `1M` is huge
 
 ## Initial conditions
 
