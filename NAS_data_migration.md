@@ -202,7 +202,7 @@ https://community.wd.com/t/wd-mycloud-ex2-ultra-2x4tb-slow-write-speeds-over-ssh
 And since I had too much time on my hands, I decided to redo the disk configuration and start over. This time using RAID-0 with no encryption:
 
 ```
-# dd if=/dev/zero of=test bs=1G count=1
+# dd if=/dev/zero of=1GB_TEST_FILE bs=1G count=1
 1+0 records in
 1+0 records out
 1073741824 bytes (1.0GB) copied, 32.926906 seconds, 31.1MB/s
@@ -222,7 +222,7 @@ Wait, am I doing it right? Let's try again using `sync` and with different block
 1 GB block: 
 
 ```
-root@MyCloudEX2Ultra Marcin # sync; dd if=/dev/zero of=1GB_TEST_FILE bs=1G count=1; sync
+# sync; dd if=/dev/zero of=1GB_TEST_FILE bs=1G count=1; sync
 1+0 records in
 1+0 records out
 1073741824 bytes (1.0GB) copied, 28.212753 seconds, 36.3MB/s
