@@ -6,7 +6,7 @@ I was trying to migrate my data from one WD MyCloud EX 2 Ultra to another. I fou
 
 ### Results
 
-Starting with 20-25 MB/s using `scp` and `rsync`, finiched with 55 MB/s using `rsync` running as daemon on source. See [Solution](#Solution) for details.
+Starting with 20-25 MB/s using `scp` and `rsync`, finished with 55 MB/s using `rsync` running as daemon on source. See [Solution](#Solution) for details.
 
 ### Takeaways
 
@@ -272,7 +272,7 @@ Run rsync daemon using command `rsync --daemon`
 
 ## On target:
 
-Verify rsync server is accessible 
+Verify that rsync server is accessible 
 
 ```
 # rsync --list-only rsync://192.168.1.54
@@ -290,7 +290,7 @@ receiving incremental file list
 
 Success! With over double the speed. It is still lower than 90-100 MB/S reported over internet when using SMB, but it should be sufficient for now. 
 
-Copying whole shares is just as easy:
+Copying whole directories is just as easy:
 
 ```
 rsync -a rsync://192.168.1.54:12000/files/Marcin/ /mnt/HD/HD_a2/Marcin --progress
