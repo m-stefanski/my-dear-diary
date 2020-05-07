@@ -243,11 +243,13 @@ Ah, there we have it. It seems that rsync is CPU-bound on this machine, and its 
 
 https://community.wd.com/t/horrible-rsync-performance-on-wd-cloud-vs-my-book-live/90736/46
 
-Unfortunately there is no way to mount smb or nfs share on MyCloud, but fortunately `rsync` can be run as daemon. 
+Unfortunately there is no way to mount smb or nfs share on MyCloud... 
 
-# Solution - using rsync on both sides
+# Solution
 
-Some configuration is needed first, though:
+To share the workload between source and target, we will be using rsync protocol  with `rsync` running as a daemon on source.
+
+Some configuration is needed, though:
 
 ## On source:
 
