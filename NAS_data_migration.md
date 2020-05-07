@@ -239,7 +239,7 @@ root@MyCloudEX2Ultra Marcin # sync; dd if=/dev/zero of=1GB_TEST_FILE bs=1G count
 
 Bingo. The testing method was wrong. Seems that the drive is perfectly capable of much better write speeds. Back to the transfer method.
 
-Ah, there we have it. It seems that rsync is CPU-bound on this machine, and its speed is butchered by the fact only one CPU core is used. This is the reason why NFS transfer was running circles around it.
+Ah, there we have it. It seems that rsync is CPU-bound on this machine, and its speed is butchered by the fact only one CPU core is used. This is the reason why SMB transfer was running circles around it.
 
 https://community.wd.com/t/horrible-rsync-performance-on-wd-cloud-vs-my-book-live/90736/46
 
