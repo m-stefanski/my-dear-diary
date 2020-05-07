@@ -1,17 +1,18 @@
 # The Story
 
-I was trying to migrate my data from one WD MyCloud EX 2 Ultra to another. This is my story of frustration, unanswered questions and a journey through bash + ssh.
+I was trying to migrate my data from one WD MyCloud EX 2 Ultra to another. I found that file transfer between both NASes was limited to 25 MB/s. This file is my story of frustration, unanswered questions and a journey through bash + ssh.
 
 ## TL;DR
 
 ### Results
 
-As of now, transfer speeds are consistently around 20-25 MB/s with the bottleneck being target drive write speed. Looking for possible causes.
+Starting with 20-25 MB/s using `scp` and `rsync`, finiched with 55 MB/s using `rsync` running as daemon on source. See [Solution](#Solution) for details.
 
 ### Takeaways
 
 * To check for network performance, start with `iperf` for throughput, then `ethtool` for hardware layer and then proceed with tuning if necessary
 * To check drive performance: `hdparm` and `dd` for read and write speeds, before checking transfer tools
+* If you use `dd` to test write speeds, **try smaller block sizes**, difference between `1G` and `1M` is huge
 * In this case, there is no performance difference between `scp` and `rsync`, athough if I wanted to resume broken copy process, rsync provides option to skip existing files (as a workaround in scp we can force this by removing write persmissions to already existing files)
 
 ## Initial conditions
@@ -50,29 +51,10 @@ First I checked if network cards indeed connected using 1000 Mbps full-duplex us
 ```
 # ethtool egiga0
 Settings for egiga0:
-	Supported ports: [ TP MII ]
-	Supported link modes:   10baseT/Half 10baseT/Full 
-	                        100baseT/Half 100baseT/Full 
-	                        1000baseT/Full 
-	Supported pause frame use: No
-	Supports auto-negotiation: Yes
-	Advertised link modes:  10baseT/Half 10baseT/Full 
-	                        100baseT/Half 100baseT/Full 
-	                        1000baseT/Half 1000baseT/Full 
-	Advertised pause frame use: No
-	Advertised auto-negotiation: No
-	Link partner advertised link modes:  10baseT/Half 10baseT/Full 
-	                                     100baseT/Half 100baseT/Full 
-	                                     1000baseT/Full 
-	Link partner advertised pause frame use: No
-	Link partner advertised auto-negotiation: Yes
+	(...)
 	Speed: 1000Mb/s
 	Duplex: Full
-	Port: MII
-	PHYAD: 0
-	Transceiver: internal
-	Auto-negotiation: on
-	Link detected: yes
+	(...)
 ```
 
 And that the IO and CPU are not saturated (those were already visible with web-ui, but I used `iostat`):
@@ -196,14 +178,14 @@ Let's stop them for the time being.
 /etc/init.d/wdphotodbmergerd stop
 ```
 
-To do this permamently, following command might be used:
+To do this permamently, following command were possible in the past:
 
 ```
 update-rc.d wdphotodbmergerd disable
 update-rc.d wdmcserverd disable
 ```
 
-But to no avail. Problem remains.
+But with they stopped working in newest firmware revisions.
 
 So there we are. SMB transfers to the drive are faster, 50-70 MB/s, close to advertised. And it would seem that I am not the only one with such problem (SCP slow, SMB fast):
 
@@ -216,3 +198,102 @@ However, the benchmarks around web seem to find scp an rsync much faster than SM
 Having depleted my theories I decided to ask WD community:
 
 https://community.wd.com/t/wd-mycloud-ex2-ultra-2x4tb-slow-write-speeds-over-ssh/250988
+
+And since I had too much time on my hands, I decided to redo the disk configuration and start over. This time using RAID-0 with no encryption:
+
+```
+# dd if=/dev/zero of=test bs=1G count=1
+1+0 records in
+1+0 records out
+1073741824 bytes (1.0GB) copied, 32.926906 seconds, 31.1MB/s
+```
+
+Better, but not great. How about Spanning?
+
+```
+# dd if=/dev/zero of=1GB_TEST_FILE bs=1G count=1
+1+0 records in
+1+0 records out
+1073741824 bytes (1.0GB) copied, 31.453585 seconds, 32.6MB/s
+```
+
+Wait, am I doing it right? Let's try again using `sync` and with different block sizes:
+
+1 GB block: 
+
+```
+root@MyCloudEX2Ultra Marcin # sync; dd if=/dev/zero of=1GB_TEST_FILE bs=1G count=1; sync
+1+0 records in
+1+0 records out
+1073741824 bytes (1.0GB) copied, 28.212753 seconds, 36.3MB/s
+```
+
+1 MB block:
+
+```
+# sync; dd if=/dev/zero of=1GB_TEST_FILE bs=1M count=1024; sync
+1024+0 records in
+1024+0 records out
+1073741824 bytes (1.0GB) copied, 5.598899 seconds, 182.9MB/s
+```
+
+Bingo. The testing method was wrong. Seems that the drive is perfectly capable of much better write speeds. Back to the transfer method.
+
+Ah, there we have it. It seems that rsync is CPU-bound on this machine, and its speed is butchered by the fact only one CPU core is used. This is the reason why NFS transfer was running circles around it.
+
+https://community.wd.com/t/horrible-rsync-performance-on-wd-cloud-vs-my-book-live/90736/46
+
+Unfortunately there is no way to mount smb or nfs share on MyCloud, but fortunately `rsync` can be run as daemon. 
+
+# Solution - using rsync on both sides
+
+Some configuration is needed first, though:
+
+## On source:
+
+Create file `/etc/rsyncd.conf` and populate it with:
+
+```
+pid file = /var/run/rsyncd.pid
+lock file = /var/run/rsync.lock
+log file = /var/log/rsync.log
+port = 12000
+
+[files]
+path = /mnt/HD/HD_a2/
+comment = RSYNC FILES
+read only = true
+timeout = 300
+gid = root
+uid = root
+```
+
+Run rsync daemon using command `rsync --daemon`
+
+## On target:
+
+Verify rsync server is accessible 
+
+```
+# rsync --list-only rsync://192.168.1.54
+files          	RSYNC FILES
+```
+
+Copy test file from desired share (in my case `Marcin`) from one NAS to another:
+
+```
+# rsync -a rsync://192.168.1.54:12000/files/Marcin/1GB_TEST_FILE /mnt/HD/HD_a2/Marcin/ --progress
+receiving incremental file list
+1GB_TEST_FILE
+   470220800  44%   56.30MB/s    0:00:10
+```
+
+Success! With over double the speed. It is still lower than 90-100 MB/S reported over internet when using SMB, but it should be sufficient for now. 
+
+Copying whole shares is just as easy:
+
+```
+rsync -a rsync://192.168.1.54:12000/files/Marcin/ /mnt/HD/HD_a2/Marcin --progress
+```
+
+It's been fun. Truly. Time to have a life though.
